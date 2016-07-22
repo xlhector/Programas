@@ -1,2 +1,3 @@
-# Programas
-programas que realizó por aburrimiento, proyectos de escuela o trabajo.
+# Bienvenido
+Esta carpeta contiene el código de los programas, juegos, proyectos que he realizado en mis tiempos libres y eres libre de descargarlos.
+
