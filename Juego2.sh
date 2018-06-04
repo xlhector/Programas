@@ -1,13 +1,13 @@
 #!/bin/bash
 
 posx=1;
-posy=1;
+posy=6;
 limite="";
 limitpun=5;
-campox=20;
-campoy=10;
+campox=10;
+campoy=5;
 posxm=$(($RANDOM%($campox-1)+1))
-posym=$(($RANDOM%($campoy-1)+1))
+posym=$(($RANDOM%($campoy-6)+6))
 puntaje=0;
 segrest=5;
 segact=$(date +%S) segact=${segact#0}
@@ -16,50 +16,49 @@ segtemp=0;
 segdec=0;
 
 
-
-while true; do  #20
-
+function paintField(){
 clear
 
-echo "Mueva el punto con las Letras $limite"#20
+echo "Mueva el punto con las Letras $limite"
 echo "w o up:Arriba	q o Q:Salir"
 echo "s o ↓:Abajo"
 echo "a o ←:Izquierda	Puntaje	             : $puntaje"
 echo "d o →:Derecha	Tiempo Restante      : $segrest"
 
-
-#Pintar campo
 for i in `seq 1 $campoy`; do
-echo
 #pintar las demas lineas 30
-  if [ $posy -eq $i ] || [ $posym -eq $i ]; then #maquina o jugador están en esa linea
-    for j in `seq 1 $campox`; do
-      if [ $posx -eq $j ] && [ $posy -eq $i ]; then #Es jugador quien está ahí
-        printf "*"
-      elif [ $posxm -eq $j ] && [ $posym -eq $i ]; then #No, es máquina :D
-        printf "^"
-      else
-        printf "-"
-      fi
-    done #40
-  else
-    for j in `seq 1 $campox`; do
-      printf "-"
-    done
-  fi
-done
+    printf -v line '%*s' "$campox"
+    echo ${line// /-}
+  # fi
+done	
+paintEnemy
+paintTime
+}
 
-echo
-echo "________________________________"
+function paintEnemy(){
+	printf "\033[%d;%df^"  $posym $posxm;
+}
+
+function paintTime(){
+    printf "\033[%d;%df$segrest  "  5 40;
+}
+
+paintField
+paintEnemy
+
+while true; do  #20
+
+
 #50
-read -n 1 -p  "Presione una tecla:" tecla #captura la tecla para moverse
+read -s -n 1 tecla #captura la tecla para moverse
 limite="";
 case $tecla in
 d | C )
  if [ $posx -eq $campox ]; then
    limite=" - Limite alcansado, haz llegado a la pared derecha"
    continue
- else
+ else   
+   printf "\033[%d;%df-"  $posy $posx;
    posx=$(($posx+1));
  fi
  ;;
@@ -68,34 +67,38 @@ a | D )
    limite=" - Limite alcansado, haz llegado a la pared izquierda"
    continue
  else
+   printf "\033[%d;%df-"  $posy $posx;
    posx=$(($posx-1));
  fi
  ;;
 s | B ) #70
- if [ $posy -eq $campoy ]; then
+ if [ $posy -eq $(($campoy+5)) ]; then
    limite=" - Limite alcansado, haz llegado a la pared baja"
    continue
  else
+   printf "\033[%d;%df-"  $posy $posx;
    posy=$(($posy+1));
  fi
  ;;
 w | A )
- if [ $posy -eq 1 ]; then
+ if [ $posy -eq 6 ]; then
    limite=" - Limite alcansado, haz llegado a la pared alta"
    continue
  else
+   printf "\033[%d;%df-"  $posy $posx;
    posy=$(($posy-1));
  fi
  ;;
 q | Q) clear; echo "Gracias por jugar adios."; exit 0;;
 esac
 
+
 ##simula el cronometro.
 segtemp=$(date +%S) segtemp=${segtemp#0} 
 
      #ignora el código si trata de entrar 2 veces en un mismo segundo
 if [ $segign -ne $segtemp ]; then  
-while true; do
+  while true; do
      #Si son iguales termina el ciclo
      if [ $segact -eq $segtemp ]; then
         break
@@ -107,6 +110,7 @@ while true; do
      fi
    segact=$(( $segact + 1))
   done
+  paintTime
 fi
 
 segign=$segtemp;
@@ -129,19 +133,23 @@ if [ $segrest -le 0 ]; then
    exit 0;
 fi
 
+
+
 ##Verfica si alcanzaste el objetivo
 if [ $posy -eq $posym ] && [ $posx -eq $posxm ]; then
 puntaje=$((puntaje+1))
 posxm=$(($RANDOM%($campox-1)+1))
-posym=$(($RANDOM%($campoy-1)+1))
+posym=$(($RANDOM%($campoy-6)+6))
 segrest=$(( $segrest + 2 ))
+paintEnemy
 fi
 
 #Cambia el nivel según el puntaje
 if [ $puntaje -eq $limitpun ]; then
    campoy=$(($campoy+2))
    campox=$(($campox+5))
-   limitpun=$(($limitpun*2))
+   limitpun=$(($limitpun+5))
+   paintField
 fi
 #Verifica si alcansaste el puntaje ganador
 if [ $puntaje -eq 200 ]; then
@@ -161,5 +169,9 @@ if [ $puntaje -eq 200 ]; then
    echo "            *********               "
    exit 0;
 fi
-done
 
+
+printf "\033[%d;%df*"  $posy $posx;
+
+printf "\033[%d;%df "  $((campox+1)) 20;
+done
